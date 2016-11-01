@@ -1,0 +1,31 @@
+{
+    "name": "karmia-storage-adapter-mongodb",
+    "version": "0.1.2",
+    "description": "MongoDB adapter for Karmia Storage",
+    "homepage": "https://github.com/fujimakishouten/karmia-storage-adapter-mongodb",
+    "license": "MIT",
+    "author": "Kazuma Fujimaki <fujimaki-k@fujimakishouten.com>",
+    "main": "index.js",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/fujimakishouten/karmia-storage-adapter-mongodb.git"
+    },
+    "scripts": {
+        "cobertura": "./node_modules/.bin/istanbul cover --report cobertura ./node_modules/mocha/bin/_mocha ./test",
+        "coverage": "./node_modules/.bin/istanbul cover --report html ./node_modules/mocha/bin/_mocha ./test",
+        "test": "./node_modules/.bin/mocha ./test"
+    },
+    "dependencies": {
+        "mongoose": ">=4.6.0"
+    },
+    "devDependencies": {
+        "co": ">=4.6.0",
+        "eslint": ">=3.5.0",
+        "expect.js": ">=0.3.1",
+        "istanbul": ">=0.4.5",
+        "mocha": ">=2.4.5"
+    },
+    "engines": {
+        "node": ">=4.0.0"
+    }
+}
