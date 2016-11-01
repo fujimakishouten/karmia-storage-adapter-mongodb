@@ -6,8 +6,7 @@
 
 
 // Variables
-const co = require('co'),
-    expect = require('expect.js'),
+const expect = require('expect.js'),
     fixture = require('./resource/fixture'),
     adapter = require('../'),
     options = {
@@ -17,7 +16,7 @@ const co = require('co'),
     };
 
 
-describe('karmia-storage-adapter-memory', function () {
+describe('karmia-storage-adapter-mongodb', function () {
     describe('getConnection', function () {
         it('Should not get connection', function (done) {
             const storage = adapter(options);
@@ -198,8 +197,7 @@ describe('karmia-storage-adapter-memory', function () {
                 }).then(function () {
                     return storage.get(key);
                 }).then(function (result) {
-                    expect(result.key).to.be(key);
-                    expect(result.value).to.be(value);
+                    expect(result).to.be(value);
 
                     return storage.remove(key);
                 }).then(function () {
@@ -225,8 +223,7 @@ describe('karmia-storage-adapter-memory', function () {
                                     return done(error);
                                 }
 
-                                expect(result.key).to.be(key);
-                                expect(result.value).to.be(value);
+                                expect(result).to.be(value);
 
                                 storage.remove(key).then(function () {
                                     done();
@@ -254,15 +251,13 @@ describe('karmia-storage-adapter-memory', function () {
                 }).then(function () {
                     return storage.get(key);
                 }).then(function (result) {
-                    expect(result.key).to.be(key);
-                    expect(result.value).to.be(value);
+                    expect(result).to.be(value);
 
                     return storage.set(key, update);
                 }).then(function () {
                     return storage.get(key);
                 }).then(function (result) {
-                    expect(result.key).to.be(key);
-                    expect(result.value).to.be(update);
+                    expect(result).to.be(update);
 
                     return storage.remove(key);
                 }).then(function () {
@@ -290,8 +285,7 @@ describe('karmia-storage-adapter-memory', function () {
                                     return done(error);
                                 }
 
-                                expect(result.key).to.be(key);
-                                expect(result.value).to.be(value);
+                                expect(result).to.be(value);
 
                                 storage.set(key, update).then(function () {
                                     storage.get(key, function (error, result) {
@@ -299,8 +293,7 @@ describe('karmia-storage-adapter-memory', function () {
                                             return done(error);
                                         }
 
-                                        expect(result.key).to.be(key);
-                                        expect(result.value).to.be(update);
+                                        expect(result).to.be(update);
 
                                         storage.remove(key).then(function () {
                                             done();
@@ -324,14 +317,10 @@ describe('karmia-storage-adapter-memory', function () {
 
                 storage.connect().then(function () {
                     return storage.set(key, value);
-                }).then(function (result) {
-                    expect(result.key).to.be(key);
-                    expect(result.value).to.be(value);
-
+                }).then(function () {
                     return storage.get(key);
                 }).then(function (result) {
-                    expect(result.key).to.be(key);
-                    expect(result.value).to.be(value);
+                    expect(result).to.be(value);
 
                     return storage.remove(key);
                 }).then(function () {
@@ -345,16 +334,13 @@ describe('karmia-storage-adapter-memory', function () {
                     value = 'VALUE';
 
                 storage.connect().then(function () {
-                    storage.set(key, value, function (error, result) {
+                    storage.set(key, value, function (error) {
                         if (error) {
                             return done(error);
                         }
 
-                        expect(result.key).to.be(key);
-                        expect(result.value).to.be(value);
                         storage.get(key).then(function (result) {
-                            expect(result.key).to.be(key);
-                            expect(result.value).to.be(value);
+                            expect(result).to.be(value);
 
                             return storage.remove(key);
                         }).then(function () {
@@ -375,24 +361,16 @@ describe('karmia-storage-adapter-memory', function () {
 
                 storage.connect().then(function () {
                     return storage.set(key, value);
-                }).then(function (result) {
-                    expect(result.key).to.be(key);
-                    expect(result.value).to.be(value);
-
+                }).then(function () {
                     return storage.get(key);
                 }).then(function (result) {
-                    expect(result.key).to.be(key);
-                    expect(result.value).to.be(value);
+                    expect(result).to.be(value);
 
                     return storage.set(key, update);
-                }).then(function (result) {
-                    expect(result.key).to.be(key);
-                    expect(result.value).to.be(update);
-
+                }).then(function () {
                     return storage.get(key);
                 }).then(function (result) {
-                    expect(result.key).to.be(key);
-                    expect(result.value).to.be(update);
+                    expect(result).to.be(update);
 
                     return storage.remove(key);
                 }).then(function () {
@@ -407,27 +385,21 @@ describe('karmia-storage-adapter-memory', function () {
                     update = 'UPDATE';
 
                 storage.connect().then(function () {
-                    storage.set(key, value, function (error, result) {
+                    storage.set(key, value, function (error) {
                         if (error) {
                             return done(error);
                         }
 
-                        expect(result.key).to.be(key);
-                        expect(result.value).to.be(value);
-                        storage.get(key).then(function () {
-                            expect(result.key).to.be(key);
-                            expect(result.value).to.be(value);
+                        storage.get(key).then(function (result) {
+                            expect(result).to.be(value);
 
-                            storage.set(key, update, function (error, result) {
+                            storage.set(key, update, function (error) {
                                 if (error) {
                                     return done(error);
                                 }
 
-                                expect(result.key).to.be(key);
-                                expect(result.value).to.be(update);
                                 storage.get(key).then(function (result) {
-                                    expect(result.key).to.be(key);
-                                    expect(result.value).to.be(update);
+                                    expect(result).to.be(update);
 
                                     return storage.remove(key);
                                 }).then(function () {
@@ -453,8 +425,7 @@ describe('karmia-storage-adapter-memory', function () {
                 }).then(function () {
                     return storage.get(key);
                 }).then(function (result) {
-                    expect(result.key).to.be(key);
-                    expect(result.value).to.be(value);
+                    expect(result).to.be(value);
 
                     return storage.remove(key);
                 }).then(function () {
@@ -476,8 +447,7 @@ describe('karmia-storage-adapter-memory', function () {
                 }).then(function () {
                     return storage.get(key);
                 }).then(function (result) {
-                    expect(result.key).to.be(key);
-                    expect(result.value).to.be(value);
+                    expect(result).to.be(value);
 
                     storage.remove(key, function (error) {
                         if (error) {
