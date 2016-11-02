@@ -17,6 +17,26 @@ const expect = require('expect.js'),
 
 
 describe('karmia-storage-adapter-mongodb', function () {
+    describe('constructor', function () {
+        it('Should set ttl', function (done) {
+            const ttl = 1024,
+                storage = adapter({
+                    host: 'localhost',
+                    port: 27017,
+                    database: 'karmia_storage_adapter_mongodb',
+                    ttl: ttl
+                });
+            storage.connect().then(function () {
+                return storage.model();
+            }).then(function (result) {
+                expect(storage.ttl).to.be(ttl);
+                expect(result.schema._indexes[0][1].expireAfterSeconds).to.be(ttl);
+
+                done();
+            });
+        });
+    });
+
     describe('getConnection', function () {
         it('Should not get connection', function (done) {
             const storage = adapter(options);
@@ -232,78 +252,6 @@ describe('karmia-storage-adapter-mongodb', function () {
                         });
                     });
                 });
-            });
-        });
-
-        describe('Should get updated value', function () {
-            it('Promise', function (done) {
-                const storage = adapter(options),
-                    key = 'KEY',
-                    value = 'VALUE',
-                    update = 'UPDATE';
-
-                storage.connect().then(function () {
-                    return storage.get(key);
-                }).then(function (result) {
-                    expect(result).to.be(null);
-
-                    return storage.set(key, value);
-                }).then(function () {
-                    return storage.get(key);
-                }).then(function (result) {
-                    expect(result).to.be(value);
-
-                    return storage.set(key, update);
-                }).then(function () {
-                    return storage.get(key);
-                }).then(function (result) {
-                    expect(result).to.be(update);
-
-                    return storage.remove(key);
-                }).then(function () {
-                    done();
-                }).catch(done);
-            });
-
-            it('Callback', function (done) {
-                const storage = adapter(options),
-                    key = 'KEY',
-                    value = 'VALUE',
-                    update = 'UPDATE';
-
-                storage.connect().then(function () {
-                    storage.get(key, function (error, result) {
-                        if (error) {
-                            return done(error);
-                        }
-
-                        expect(result).to.be(null);
-
-                        storage.set(key, value).then(function () {
-                            storage.get(key, function (error, result) {
-                                if (error) {
-                                    return done(error);
-                                }
-
-                                expect(result).to.be(value);
-
-                                storage.set(key, update).then(function () {
-                                    storage.get(key, function (error, result) {
-                                        if (error) {
-                                            return done(error);
-                                        }
-
-                                        expect(result).to.be(update);
-
-                                        storage.remove(key).then(function () {
-                                            done();
-                                        }).catch(done);
-                                    });
-                                }).catch(done);
-                            });
-                        }).catch(done);
-                    });
-                }).catch(done);
             });
         });
     });
