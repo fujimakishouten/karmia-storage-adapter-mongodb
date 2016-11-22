@@ -8,31 +8,31 @@
 module.exports = [
     {
         key: 1,
-        name: 'Honoka Kosaka'
+        value: 'Honoka Kosaka'
     }, {
         key: 2,
-        name: 'Kotori Minami'
+        value: 'Kotori Minami'
     }, {
         key: 3,
-        name: 'Umi Sonoda'
+        value: 'Umi Sonoda'
     }, {
         key: 4,
-        name: 'Maki Nishikino'
+        value: 'Maki Nishikino'
     }, {
         key: 5,
-        name: 'Rin Hoshizora'
+        value: 'Rin Hoshizora'
     }, {
         key: 6,
-        name: 'Hanayo Koizumi'
+        value: 'Hanayo Koizumi'
     }, {
         key: 7,
-        name: 'Nico Yazawa'
+        value: 'Nico Yazawa'
     }, {
         key: 8,
-        name: 'Nozomi Tojo'
+        value: 'Nozomi Tojo'
     }, {
         key: 9,
-        name: 'Eri Ayase'
+        value: 'Eri Ayase'
     }
 ];
 

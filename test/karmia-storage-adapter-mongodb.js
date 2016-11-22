@@ -17,38 +17,18 @@ const expect = require('expect.js'),
 
 
 describe('karmia-storage-adapter-mongodb', function () {
-    describe('constructor', function () {
-        it('Should set ttl', function (done) {
-            const ttl = 1024,
-                storage = adapter({
-                    host: 'localhost',
-                    port: 27017,
-                    database: 'karmia_storage_adapter_mongodb',
-                    ttl: ttl
-                });
-            storage.connect().then(function () {
-                return storage.model();
-            }).then(function (result) {
-                expect(storage.ttl).to.be(ttl);
-                expect(result.schema._indexes[0][1].expireAfterSeconds).to.be(ttl);
-
-                done();
-            });
-        });
-    });
-
     describe('getConnection', function () {
         it('Should not get connection', function (done) {
-            const storage = adapter(options);
-            expect(storage.getConnection()).to.be(undefined);
+            const storages = adapter(options);
+            expect(storages.getConnection()).to.be(undefined);
 
             done();
         });
 
         it('Should get connection', function (done) {
-            const storage = adapter(options);
-            storage.connect().then(function () {
-                const connection = storage.getConnection();
+            const storages = adapter(options);
+            storages.connect().then(function () {
+                const connection = storages.getConnection();
                 expect(connection.constructor.name).to.be('NativeConnection');
 
                 done();
@@ -57,9 +37,9 @@ describe('karmia-storage-adapter-mongodb', function () {
 
         it('Should get existing connection', function (done) {
             const connection = {name: 'TEST_CONNECTION'},
-                storage = adapter({}, connection);
+                storages = adapter(options, connection);
 
-            expect(storage.getConnection()).to.be(connection);
+            expect(storages.getConnection()).to.be(connection);
 
             done();
         });
@@ -68,9 +48,9 @@ describe('karmia-storage-adapter-mongodb', function () {
     describe('connect', function () {
         describe('Should connect to database', function () {
             it('Promise', function (done) {
-                const storage = adapter(options);
-                storage.connect().then(function () {
-                    const connection = storage.getConnection();
+                const storages = adapter(options);
+                storages.connect().then(function () {
+                    const connection = storages.getConnection();
                     expect(connection.constructor.name).to.be('NativeConnection');
 
                     done();
@@ -80,13 +60,9 @@ describe('karmia-storage-adapter-mongodb', function () {
             });
 
             it('Callback', function (done) {
-                const storage = adapter();
-                storage.connect(function (error) {
-                    if (error) {
-                        return done(error);
-                    }
-
-                    const connection = storage.getConnection();
+                const storages = adapter(options);
+                storages.connect(function () {
+                    const connection = storages.getConnection();
                     expect(connection.constructor.name).to.be('NativeConnection');
 
                     done();
@@ -96,12 +72,12 @@ describe('karmia-storage-adapter-mongodb', function () {
     });
 
     describe('disconnect', function () {
-        describe('Should disconnect database', function () {
+        describe('Should disconnect from database', function () {
             describe('Connected', function () {
                 it('Promise', function (done) {
-                    const storage = adapter(options);
-                    storage.connect().then(function () {
-                        return storage.disconnect();
+                    const storages = adapter(options);
+                    storages.connect().then(function () {
+                        return storages.disconnect();
                     }).then(function (result) {
                         expect(result).to.be(undefined);
 
@@ -110,9 +86,9 @@ describe('karmia-storage-adapter-mongodb', function () {
                 });
 
                 it('Callback', function (done) {
-                    const storage = adapter(options);
-                    storage.connect().then(function () {
-                        storage.disconnect(function (error, result) {
+                    const storages = adapter(options);
+                    storages.connect().then(function () {
+                        storages.disconnect(function (error, result) {
                             if (error) {
                                 return done(error);
                             }
@@ -127,8 +103,8 @@ describe('karmia-storage-adapter-mongodb', function () {
 
             describe('Not connected', function () {
                 it('Promise', function (done) {
-                    const storage = adapter(options);
-                    storage.disconnect().then(function (result) {
+                    const storages = adapter(options);
+                    storages.disconnect().then(function (result) {
                         expect(result).to.be(undefined);
 
                         done();
@@ -136,8 +112,8 @@ describe('karmia-storage-adapter-mongodb', function () {
                 });
 
                 it('Callback', function (done) {
-                    const storage = adapter(options);
-                    storage.disconnect(function (error, result) {
+                    const storages = adapter(options);
+                    storages.disconnect(function (error, result) {
                         if (error) {
                             return done(error);
                         }
@@ -151,66 +127,100 @@ describe('karmia-storage-adapter-mongodb', function () {
         });
     });
 
-    describe('count', function () {
-        const storage = adapter(options);
+    describe('storage', function () {
+        const storages = adapter(options),
+            name = 'user';
 
         before(function (done) {
-            storage.connect().then(function () {
+            storages.connect().then(function () {
+                const storage = storages.storage(name);
+
                 return fixture.reduce(function (promise, data) {
                     return promise.then(function () {
-                        storage.set(data.key, data.value);
+                        return storage.set(data.key, data.value);
                     });
                 }, Promise.resolve());
             }).then(function () {
-                return done();
+                done();
+            }).catch(done);
+        });
+
+        after(function (done) {
+            const connection = storages.getConnection(),
+                parallels = Object.keys(connection.collections).map(function (key) {
+                    return new Promise(function (resolve, reject) {
+                        connection.collections[key].drop(function (error, result) {
+                            return (error) ? reject(error) : resolve(result);
+                        });
+                    });
+                });
+
+            Promise.all(parallels).then(function () {
+                done();
             }).catch(function (error) {
-                return done(error);
+                done(error);
             });
         });
 
-        describe('Should count items', function () {
+        describe('count', function () {
+            describe('Should count items', function () {
+                it('Promise', function (done) {
+                    const storage = storages.storage(name);
+                    storage.count().then(function (result) {
+                        expect(result).to.be(9);
+
+                        done();
+                    }).catch(done);
+                });
+
+                it('Callback', function (done) {
+                    const storage = storages.storage(name);
+                    storage.count(function (error, result) {
+                        if (error) {
+                            return done(error);
+                        }
+
+                        expect(result).to.be(9);
+
+                        done();
+                    });
+                });
+            });
+        });
+
+        describe('get', function () {
             it('Promise', function (done) {
-                storage.count().then(function (result) {
-                    expect(result).to.be(9);
+                const storage = storages.storage(name),
+                    data = fixture[0];
+                storage.get(data.key).then(function (result) {
+                    expect(result).to.be(data.value);
 
                     done();
                 }).catch(done);
             });
 
             it('Callback', function (done) {
-                storage.count(function (error, result) {
+                const storage = storages.storage(name),
+                    data = fixture[0];
+                storage.get(data.key, function (error, result) {
                     if (error) {
                         return done(error);
                     }
 
-                    expect(result).to.be(9);
+                    expect(result).to.be(data.value);
 
                     done();
                 });
             });
         });
 
-        after(function (done) {
-            Promise.all(fixture.map(function (data) {
-                return storage.remove(data.key);
-            })).then(function () {
-                return done();
-            }).catch(function (error) {
-                return done(error);
-            });
-        });
-    });
-
-    describe('get', function () {
-        describe('Should get value', function () {
+        describe('set', function () {
             it('Promise', function (done) {
-                const storage = adapter(options),
-                    key = 'KEY',
-                    value = 'VALUE';
+                const storage = storages.storage(name),
+                    key = 10,
+                    value = 'Yukiho Kosaka';
 
-                storage.connect().then(function () {
-                    return storage.get(key);
-                }).then(function (result) {
+                storage.get(key).then(function (result) {
                     expect(result).to.be(null);
 
                     return storage.set(key, value);
@@ -226,189 +236,95 @@ describe('karmia-storage-adapter-mongodb', function () {
             });
 
             it('Callback', function (done) {
-                const storage = adapter(options),
-                    key = 'KEY',
-                    value = 'VALUE';
+                const storage = storages.storage(name),
+                    key = 10,
+                    value = 'Yukiho Kosaka';
 
-                storage.connect().then(function () {
+                storage.get(key, function (error, result) {
+                    if (error) {
+                        return done(error);
+                    }
+
+                    expect(result).to.be(null);
+
+                    storage.set(key, value, function (error) {
+                        if (error) {
+                            return done(error);
+                        }
+
+                        storage.get(key, function (error, result) {
+                            if (error) {
+                                return done(error);
+                            }
+
+                            expect(result).to.be(value);
+
+                            storage.remove(key, done);
+                        })
+                    });
+                });
+            });
+        });
+
+        describe('remove', function () {
+            it('Promise', function (done) {
+                const storage = storages.storage(name),
+                    key = 10,
+                    value = 'Yukiho Kosaka';
+
+                storage.set(key, value).then(function () {
+                    return storage.get(key);
+                }).then(function (result) {
+                    expect(result).to.be(value);
+
+                    return storage.remove(key);
+                }).then(function (result) {
+                    expect(result).to.be(undefined);
+
+                    return storage.get(key);
+                }).then(function (result) {
+                    expect(result).to.be(null);
+
+                    done();
+                })
+            });
+
+            it('Callback', function (done) {
+                const storage = storages.storage(name),
+                    key = 10,
+                    value = 'Yukiho Kosaka';
+
+                storage.set(key, value, function (error) {
+                    if (error) {
+                        return done(error);
+                    }
+
                     storage.get(key, function (error, result) {
                         if (error) {
                             return done(error);
                         }
 
-                        expect(result).to.be(null);
-                        storage.set(key, value).then(function () {
+                        expect(result).to.be(value);
+
+                        storage.remove(key, function (error, result) {
+                            if (error) {
+                                return done(error);
+                            }
+
+                            expect(result).to.be(result);
+
                             storage.get(key, function (error, result) {
                                 if (error) {
                                     return done(error);
                                 }
 
-                                expect(result).to.be(value);
+                                expect(result).to.be(null);
 
-                                storage.remove(key).then(function () {
-                                    done();
-                                }).catch(done);
+                                done();
                             });
                         });
                     });
                 });
-            });
-        });
-    });
-
-    describe('set', function () {
-        describe('Should store new value', function () {
-            it('Promise', function (done) {
-                const storage = adapter(options),
-                    key = 'KEY',
-                    value = 'VALUE';
-
-                storage.connect().then(function () {
-                    return storage.set(key, value);
-                }).then(function () {
-                    return storage.get(key);
-                }).then(function (result) {
-                    expect(result).to.be(value);
-
-                    return storage.remove(key);
-                }).then(function () {
-                    done();
-                }).catch(done);
-            });
-
-            it('Callback', function (done) {
-                const storage = adapter(options),
-                    key = 'KEY',
-                    value = 'VALUE';
-
-                storage.connect().then(function () {
-                    storage.set(key, value, function (error) {
-                        if (error) {
-                            return done(error);
-                        }
-
-                        storage.get(key).then(function (result) {
-                            expect(result).to.be(value);
-
-                            return storage.remove(key);
-                        }).then(function () {
-                            done();
-                        }).catch(done);
-
-                    });
-                });
-            });
-        });
-
-        describe('Should update value', function () {
-            it('Promise', function (done) {
-                const storage = adapter(options),
-                    key = 'KEY',
-                    value = 'VALUE',
-                    update = 'UPDATE';
-
-                storage.connect().then(function () {
-                    return storage.set(key, value);
-                }).then(function () {
-                    return storage.get(key);
-                }).then(function (result) {
-                    expect(result).to.be(value);
-
-                    return storage.set(key, update);
-                }).then(function () {
-                    return storage.get(key);
-                }).then(function (result) {
-                    expect(result).to.be(update);
-
-                    return storage.remove(key);
-                }).then(function () {
-                    done();
-                }).catch(done);
-            });
-
-            it('Callback', function (done) {
-                const storage = adapter(options),
-                    key = 'KEY',
-                    value = 'VALUE',
-                    update = 'UPDATE';
-
-                storage.connect().then(function () {
-                    storage.set(key, value, function (error) {
-                        if (error) {
-                            return done(error);
-                        }
-
-                        storage.get(key).then(function (result) {
-                            expect(result).to.be(value);
-
-                            storage.set(key, update, function (error) {
-                                if (error) {
-                                    return done(error);
-                                }
-
-                                storage.get(key).then(function (result) {
-                                    expect(result).to.be(update);
-
-                                    return storage.remove(key);
-                                }).then(function () {
-                                    done();
-                                }).catch(done);
-                            });
-                        });
-                    });
-                });
-            });
-        });
-    });
-
-    describe('remove', function () {
-        describe('Should remove value', function () {
-            it('Promise', function (done) {
-                const storage = adapter(options),
-                    key = 'KEY',
-                    value = 'VALUE';
-
-                storage.connect().then(function () {
-                    return storage.set(key, value);
-                }).then(function () {
-                    return storage.get(key);
-                }).then(function (result) {
-                    expect(result).to.be(value);
-
-                    return storage.remove(key);
-                }).then(function () {
-                    return storage.get(key);
-                }).then(function (result) {
-                    expect(result).to.be(null);
-
-                    done();
-                }).catch(done);
-            });
-
-            it('Callback', function (done) {
-                const storage = adapter(options),
-                    key = 'KEY',
-                    value = 'VALUE';
-
-                storage.connect().then(function () {
-                    return storage.set(key, value);
-                }).then(function () {
-                    return storage.get(key);
-                }).then(function (result) {
-                    expect(result).to.be(value);
-
-                    storage.remove(key, function (error) {
-                        if (error) {
-                            return done(error);
-                        }
-
-                        storage.get(key).then(function (result) {
-                            expect(result).to.be(null);
-
-                            done();
-                        }).catch(done);
-                    });
-                }).catch(done);
             });
         });
     });
